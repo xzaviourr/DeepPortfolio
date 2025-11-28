@@ -7,7 +7,6 @@ from src.widgets.chatbox import ChatboxWidget
 from src.widgets.tradebook_table import TradeBookTable
 from src.widgets.welcome import WelcomeWidget
 from src.lib.controller import Controller
-from src.widgets.price_bar import PriceBarWidget
 from src.widgets.holdings import HoldingsWidget
 
 
@@ -86,7 +85,15 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    if os.path.exists("user_data/user_data.json"):
+
+    # Set Centra No.2 font globally
+    app.setStyleSheet("""
+        * {
+            font-family: "Centra No.2";
+        }
+    """)
+
+    if os.path.exists("metadata/user_data.json"):
         # If user_data.json exists, directly open the main application
         app.main_window = MainWindow()  # Keep MainWindow as an attribute of the app
         app.main_window.show()

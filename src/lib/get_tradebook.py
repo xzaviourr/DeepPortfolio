@@ -1,5 +1,6 @@
 import os
 import csv
+from uuid import uuid4
 import pandas as pd
 import datetime
 from typing import List, Dict
@@ -26,6 +27,7 @@ def load_manual_trades(file_path: str) -> List[Trade]:
     manual_trades = []
     for trade in manual_trades_df.iterrows():
         manual_trades.append(Trade(
+            order_id = uuid4(),
             symbol = trade[1]['symbol'],
             quantity = abs(trade[1]['quantity']),
             price = trade[1]['price'],
@@ -52,6 +54,7 @@ def load_tradebook(tradebook_files: List[str], manual_trades_file: str) -> List[
     tradebook = []
     for trade in tradebook_df.iterrows():
         tradebook.append(Trade(
+            order_id = trade[1]['order_id'],
             symbol = trade[1]['symbol'],
             quantity = trade[1]['quantity'],
             price = trade[1]['price'],
@@ -79,6 +82,7 @@ def generate_adjusted_tradebook(tradebook: List[Trade], stock_info_store: Dict[s
         adjusted_tradebook = []
         for entry in tradebook.iterrows():
             adjusted_tradebook.append(Trade(
+                order_id = entry[1]['order_id'],
                 symbol = entry[1]['symbol'],
                 quantity = entry[1]['quantity'],
                 price = entry[1]['price'],
@@ -91,7 +95,13 @@ def generate_adjusted_tradebook(tradebook: List[Trade], stock_info_store: Dict[s
     tradebook_copy = tradebook.copy()
     for stock in stock_info_store.values():
         for split in stock.stock_splits:
-            tradebook_copy.append(Trade(symbol = stock.symbol, quantity = 0, price = split.ratio, typ = 'bonus', timestamp = datetime.datetime.combine(split.split_date, datetime.time(0, 0, 0))))
+            tradebook_copy.append(Trade(
+                order_id = uuid4(), 
+                symbol = stock.symbol, 
+                quantity = 0, 
+                price = split.ratio, 
+                typ = 'bonus', 
+                timestamp = datetime.datetime.combine(split.split_date, datetime.time(0, 0, 0))))
     
     tradebook_copy.sort(key=lambda t: t.timestamp)
 
@@ -111,13 +121,20 @@ def generate_adjusted_tradebook(tradebook: List[Trade], stock_info_store: Dict[s
             if holdings[trade.symbol] > 0:
                 bonus_quantity = holdings[trade.symbol] * (trade.price - 1)     # Split ratio - 1
                 holdings[trade.symbol] += bonus_quantity
-                adjusted_tradebook.append(Trade(symbol = trade.symbol, quantity = bonus_quantity, price = 0, typ = 'bonus', timestamp = trade.timestamp, remarks="bonus shares"))
+                adjusted_tradebook.append(Trade(
+                    order_id = uuid4(),
+                    symbol = trade.symbol, 
+                    quantity = bonus_quantity, 
+                    price = 0, 
+                    typ = 'bonus', 
+                    timestamp = trade.timestamp, 
+                    remarks="bonus shares"))
 
     # Save adjusted_tradebook to a CSV file
     with open(f'metadata/adjusted_tradebook_{DATE_TODAY}.csv', mode='w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['symbol', 'quantity', 'price', 'type', 'date', 'remarks'])
+        writer.writerow(['order_id', 'symbol', 'quantity', 'price', 'type', 'date', 'remarks'])
         for entry in adjusted_tradebook:
-            writer.writerow([entry.symbol, entry.quantity, entry.price, entry.typ, entry.timestamp.strftime("%Y-%m-%d %H:%M:%S"), entry.remarks])
+            writer.writerow([entry.order_id, entry.symbol, entry.quantity, entry.price, entry.typ, entry.timestamp.strftime("%Y-%m-%d %H:%M:%S"), entry.remarks])
 
     return adjusted_tradebook

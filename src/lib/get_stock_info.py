@@ -11,7 +11,6 @@ from src.database.index import insert_index_into_db, get_index_from_db
 
 DATE_TODAY = datetime.datetime.now().date().strftime("%Y-%m-%d")
 
-
 def get_stock_splits(symbol: str, stock: yf.Ticker) -> list[StockSplit]:
     """
     Fetch stock split data for a given stock symbol and store it in the database.
@@ -34,7 +33,6 @@ def get_stock_splits(symbol: str, stock: yf.Ticker) -> list[StockSplit]:
         print(f"Error fetching stock splits for {symbol}: {e}")
         return []
 
-
 def get_dividends(symbol: str, stock: yf.Ticker) -> list[Dividend]:
     """
     Fetch dividend data for a given stock symbol and store it in the database.
@@ -56,7 +54,6 @@ def get_dividends(symbol: str, stock: yf.Ticker) -> list[Dividend]:
     except Exception as e:
         print(f"Error fetching dividends for {symbol}: {e}")
         return []
-
 
 def get_stock_info(symbol: str) -> StockInfo:
     """
@@ -157,7 +154,6 @@ def get_stock_info(symbol: str) -> StockInfo:
         print(f"Error creating StockInfo object for {symbol}: {e}")
         return None
 
-
 def get_stock_info_store(symbols: list[str]) -> Dict[str, StockInfo]:
     """
     Fetch stock information for multiple symbols and store them in a dictionary.
@@ -174,7 +170,6 @@ def get_stock_info_store(symbols: list[str]) -> Dict[str, StockInfo]:
         if stock_info:
             stock_info_store[symbol] = stock_info
     return stock_info_store
-
 
 def get_index_data() -> pd.DataFrame:
     """

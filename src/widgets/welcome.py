@@ -538,7 +538,7 @@ class WelcomeWidget(QMainWindow):
             "tradebook": self.tradebook_files,
             "manual_tradebook": self.manual_trades_path
         }
-        with open("user_data/user_data.json", "w") as json_file:
+        with open("metadata/user_data.json", "w") as json_file:
             json.dump(data, json_file, indent=4)
 
     def finish(self):

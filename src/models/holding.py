@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 import datetime
 from dataclasses import dataclass, field
 
@@ -18,20 +18,20 @@ class Holding:
 
     # Trade history
     trades: List[Trade] = field(default_factory=list)
-    investment_trend: list = field(default_factory=list)
-    quantity_trend: list = field(default_factory=list)
-    realized_profit_history: list = field(default_factory=list)
-    dividend_history: list = field(default_factory=list)
+    investment_trend: List[Tuple[datetime.date, float]] = field(default_factory=list)
+    quantity_trend: List[Tuple[datetime.date, float]] = field(default_factory=list)
+    realized_profit_history: List[Tuple[datetime.datetime, float]] = field(default_factory=list)
+    dividend_history: List[Tuple[datetime.date, float]] = field(default_factory=list)
 
     # Past performance
     realized_profit: float = 0
     dividend_income: float = 0
 
     # Performance metrics
-    risk_free_return_trend: list = field(default_factory=list)
-    nifty50_return_trend: list = field(default_factory=list)
-    bsesensex_return_trend: list = field(default_factory=list)
-    niftybank_return_trend: list = field(default_factory=list)
+    risk_free_return_trend: List[Tuple[datetime.date, float]] = field(default_factory=list)
+    nifty50_return_trend: List[Tuple[datetime.date, float]] = field(default_factory=list)
+    bsesensex_return_trend: List[Tuple[datetime.date, float]] = field(default_factory=list)
+    niftybank_return_trend: List[Tuple[datetime.date, float]] = field(default_factory=list)
     
     # Stock information
     stock_info: StockInfo = None

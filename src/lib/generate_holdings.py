@@ -1,4 +1,3 @@
-import datetime
 from datetime import timedelta
 import pandas as pd
 from typing import List, Dict
@@ -53,8 +52,6 @@ def calculate_index_revenue_for_holding(holding: Holding, index_data: pd.DataFra
     else:
         print(f"Warning: Missing index data for last_available_date {last_available_date}. Skipping final calculation.")
 
-
-
 def calculate_dividend_revenue_for_holding(holding: Holding):
     dividends = holding.stock_info.dividends if holding.stock_info else []
     dividends.sort(key=lambda x: x.ex_date)
@@ -81,20 +78,21 @@ def generate_holdings_from_tradebook(symbols: List[str], tradebook: List[Trade],
 
     for trade in tradebook:
         holdings[trade.symbol].trades.append(trade)
-
+    
     for symbol in symbols:
         current_position = None
-        for trade in holdings[symbol].trades:
-            if current_position is None:
-                current_position = trade.typ
+        holdings[symbol].trades.sort(key=lambda t: t.timestamp)
+        for trade in sorted(holdings[symbol].trades, key=lambda t: t.timestamp):
+            if holdings[symbol].quantity == 0:
+                current_position = 'buy' if trade.typ in ["buy", "bonus"] else 'sell'
 
-            if trade.typ == current_position:
+            if (current_position == 'buy' and trade.typ in ["buy", "bonus"]) or current_position == 'sell' and trade.typ == 'sell':
                 if trade.typ == 'buy' or trade.typ == 'bonus':
                     holdings[symbol].quantity += trade.quantity
                 else:
                     holdings[symbol].quantity -= trade.quantity
 
-                holdings[symbol].investment += trade.quantity * trade.price
+                holdings[symbol].investment += abs(trade.quantity) * trade.price
             
             else:
                 if trade.typ == 'buy' or trade.typ == 'bonus':
@@ -106,7 +104,7 @@ def generate_holdings_from_tradebook(symbols: List[str], tradebook: List[Trade],
 
                 current_position = 'buy' if holdings[symbol].quantity >= 0 else 'sell'
                 holdings[symbol].realized_profit += holdings[symbol].realized_profit_history[-1][1]
-                holdings[symbol].investment = abs(holdings[symbol].investment - trade.quantity * trade.price)
+                holdings[symbol].investment = abs(holdings[symbol].investment - abs(trade.quantity) * holdings[symbol].buy_average)
 
             if len(holdings[symbol].quantity_trend) > 0 and holdings[symbol].quantity_trend[-1][0] == trade.timestamp.date():
                 holdings[symbol].quantity_trend[-1][1] = holdings[symbol].quantity
