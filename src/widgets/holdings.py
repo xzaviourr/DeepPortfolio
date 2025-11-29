@@ -321,6 +321,101 @@ class HoldingsWidget(QWidget):
         tab2_layout.addWidget(scroll_area)
         self.details_tabs.addTab(tab2_widget, "Stock Info")
 
+        # Tab 3: Running Info
+        tab3_widget = QWidget()
+        tab3_layout = QVBoxLayout(tab3_widget)
+
+        # Running LTCG and STCG section
+        running_info_layout = QHBoxLayout()
+        
+        # Running LTCG
+        self.running_ltcg_layout = QVBoxLayout()
+        self.running_ltcg_value = QLabel("0.00")
+        self.running_ltcg_label = QLabel("Current Running LTCG")
+        self.running_ltcg_value.setStyleSheet("""
+            QLabel {
+                font-size: 24px;
+                font-weight: bold;
+                color: #333;
+            }
+        """)
+        self.running_ltcg_label.setStyleSheet("""
+            QLabel {
+                font-size: 12px;
+                color: #666;
+            }
+        """)
+        self.running_ltcg_layout.addWidget(self.running_ltcg_value, alignment=Qt.AlignCenter)
+        self.running_ltcg_layout.addWidget(self.running_ltcg_label, alignment=Qt.AlignCenter)
+
+        # Running STCG
+        self.running_stcg_layout = QVBoxLayout()
+        self.running_stcg_value = QLabel("0.00")
+        self.running_stcg_label = QLabel("Current Running STCG")
+        self.running_stcg_value.setStyleSheet("""
+            QLabel {
+                font-size: 24px;
+                font-weight: bold;
+                color: #333;
+            }
+        """)
+        self.running_stcg_label.setStyleSheet("""
+            QLabel {
+                font-size: 12px;
+                color: #666;
+            }
+        """)
+        self.running_stcg_layout.addWidget(self.running_stcg_value, alignment=Qt.AlignCenter)
+        self.running_stcg_layout.addWidget(self.running_stcg_label, alignment=Qt.AlignCenter)
+
+        running_info_layout.addLayout(self.running_ltcg_layout)
+        running_info_layout.addLayout(self.running_stcg_layout)
+        tab3_layout.addLayout(running_info_layout)
+
+        # Running Trades Table
+        running_trades_label = QLabel("Running Trades")
+        running_trades_label.setStyleSheet("""
+            QLabel {
+                font-size: 18px;
+                font-weight: bold;
+                color: #4CAF50;
+                margin-top: 20px;
+                margin-bottom: 10px;
+            }
+        """)
+        tab3_layout.addWidget(running_trades_label)
+
+        self.running_trades_table = QTableWidget()
+        self.running_trades_table.setColumnCount(7)
+        self.running_trades_table.setHorizontalHeaderLabels([
+            "Order ID", "Symbol", "Quantity", "Price", "Type", "Timestamp", "Current Profit"
+        ])
+        self._customize_trades_table(self.running_trades_table)
+        tab3_layout.addWidget(self.running_trades_table)
+
+        # All Trades Table
+        all_trades_label = QLabel("All Trades")
+        all_trades_label.setStyleSheet("""
+            QLabel {
+                font-size: 18px;
+                font-weight: bold;
+                color: #4CAF50;
+                margin-top: 20px;
+                margin-bottom: 10px;
+            }
+        """)
+        tab3_layout.addWidget(all_trades_label)
+
+        self.all_trades_table = QTableWidget()
+        self.all_trades_table.setColumnCount(7)
+        self.all_trades_table.setHorizontalHeaderLabels([
+            "Order ID", "Symbol", "Quantity", "Price", "Type", "Timestamp", "Remarks"
+        ])
+        self._customize_trades_table(self.all_trades_table)
+        tab3_layout.addWidget(self.all_trades_table)
+
+        self.details_tabs.addTab(tab3_widget, "Running Info")
+
         splitter.addWidget(self.details_group)
 
         # Set initial splitter sizes (50% for left, 50% for right)
@@ -375,6 +470,46 @@ class HoldingsWidget(QWidget):
             table.setItemDelegateForColumn(4, ProfitLossDelegate())  # Unrealized Profit column
         elif table == self.past_holdings_table:
             table.setItemDelegateForColumn(4, ProfitLossDelegate())  # Realized Profit column
+
+    def _customize_trades_table(self, table):
+        """
+        Apply customizations specific to trades tables.
+        """
+        table.setAlternatingRowColors(True)
+        table.setStyleSheet("""
+            QTableWidget {
+                background-color: #ffffff;
+                alternate-background-color: #f9f9f9;
+                border: 1px solid #dcdcdc;
+            }
+            QTableWidget::item {
+                border-bottom: 1px solid #dcdcdc;
+                padding: 5px;
+            }
+            QTableWidget::item:selected {
+                background-color: #cce5ff;
+                color: #000000;
+            }
+        """)
+        table.setSelectionBehavior(table.SelectRows)
+        table.setShowGrid(True)
+        table.setGridStyle(Qt.SolidLine)
+        header = table.horizontalHeader()
+        header.setStyleSheet("""
+            QHeaderView::section {
+                background-color: #4CAF50;
+                color: white;
+                font-weight: bold;
+                border: 1px solid #dcdcdc;
+                padding: 5px;
+            }
+        """)
+        header.setFont(QFont("Arial", 10, QFont.Bold))
+        header.setDefaultAlignment(Qt.AlignCenter)
+        header.setSectionResizeMode(QHeaderView.Stretch)
+        table.verticalHeader().setDefaultSectionSize(30)
+        table.verticalHeader().setVisible(False)
+        table.setSortingEnabled(True)
 
     def set_holdings(self, current_holdings: List[Holding], past_holdings: List[Holding]):
         """
@@ -503,6 +638,9 @@ class HoldingsWidget(QWidget):
             value = getattr(stock_info, attr, "N/A")
             widget.setText(str(value))
 
+        # Update Tab 3 with Running Info details
+        self._update_running_info_tab(holding)
+
     def _add_stock_info_row(self, layout, attr):
         """
         Helper method to add a row for a StockInfo attribute.
@@ -512,3 +650,74 @@ class HoldingsWidget(QWidget):
         value_label = QLabel()
         layout.addRow(label, value_label)
         self.stock_info_widgets[attr] = value_label
+
+    def _update_running_info_tab(self, holding):
+        """
+        Update the Running Info tab with the selected holding's running information.
+        """
+        # Update running LTCG and STCG values
+        self.running_ltcg_value.setText(f"{holding.running_ltcg:,.2f}")
+        self.running_ltcg_value.setStyleSheet(f"""
+            QLabel {{
+                font-size: 24px;
+                font-weight: bold;
+                color: {"green" if holding.running_ltcg > 0 else "red" if holding.running_ltcg < 0 else "#333"};
+            }}
+        """)
+
+        self.running_stcg_value.setText(f"{holding.running_stcg:,.2f}")
+        self.running_stcg_value.setStyleSheet(f"""
+            QLabel {{
+                font-size: 24px;
+                font-weight: bold;
+                color: {"green" if holding.running_stcg > 0 else "red" if holding.running_stcg < 0 else "#333"};
+            }}
+        """)
+
+        # Populate running trades table
+        self._populate_trades_table(self.running_trades_table, holding.running_trades, include_remarks=False, current_price=holding.current_price)
+
+        # Populate all trades table
+        self._populate_trades_table(self.all_trades_table, holding.trades, include_remarks=True)
+
+    def _populate_trades_table(self, table, trades, include_remarks=True, current_price=None):
+        """
+        Populate a trades table with trade data.
+        """
+        # Sort trades by timestamp in descending order (latest first)
+        sorted_trades = sorted(trades, key=lambda trade: trade.timestamp, reverse=True)
+        
+        table.setRowCount(len(sorted_trades))
+        for row, trade in enumerate(sorted_trades):
+            table.setItem(row, 0, QTableWidgetItem(str(trade.order_id)))
+            table.setItem(row, 1, QTableWidgetItem(trade.symbol))
+            
+            # Color code quantity based on buy/sell
+            quantity_item = QTableWidgetItem(str(trade.quantity))
+            if trade.typ.upper() == "BUY":
+                quantity_item.setForeground(QBrush(QColor(0, 128, 0)))  # Green for buy
+            elif trade.typ.upper() == "SELL":
+                quantity_item.setForeground(QBrush(QColor(255, 0, 0)))  # Red for sell
+            table.setItem(row, 2, quantity_item)
+            
+            table.setItem(row, 3, QTableWidgetItem(f"{trade.price:.2f}"))
+            table.setItem(row, 4, QTableWidgetItem(trade.typ.upper()))
+            table.setItem(row, 5, QTableWidgetItem(trade.timestamp.strftime("%Y-%m-%d %H:%M:%S")))
+            
+            # Add current profit column for running trades (when current_price is provided)
+            if current_price is not None:
+                if trade.typ.upper() == "BUY":
+                    current_profit = (current_price - trade.price) * abs(trade.quantity)
+                else:  # SELL
+                    current_profit = (trade.price - current_price) * abs(trade.quantity)
+                
+                profit_item = QTableWidgetItem(f"{current_profit:.2f}")
+                color = QColor(0, 128, 0) if current_profit >= 0 else QColor(255, 0, 0)
+                profit_item.setForeground(QBrush(color))
+                table.setItem(row, 6, profit_item)
+                
+                # Shift remarks column if needed
+                if include_remarks:
+                    table.setItem(row, 7, QTableWidgetItem(trade.remarks or ""))
+            elif include_remarks:
+                table.setItem(row, 6, QTableWidgetItem(trade.remarks or ""))

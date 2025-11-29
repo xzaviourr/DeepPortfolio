@@ -16,6 +16,11 @@ class Holding:
     current_price: float = 0
     unrealized_profit: float = 0
 
+    # Running trades
+    running_trades: List[Trade] = field(default_factory=list)
+    running_ltcg: float = 0
+    running_stcg: float = 0
+
     # Trade history
     trades: List[Trade] = field(default_factory=list)
     investment_trend: List[Tuple[datetime.date, float]] = field(default_factory=list)

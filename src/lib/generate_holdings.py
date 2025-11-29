@@ -1,6 +1,7 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 import pandas as pd
 from typing import List, Dict
+import copy
 
 from src.models.trade import Trade
 from src.models.holding import Holding
@@ -70,6 +71,35 @@ def calculate_dividend_revenue_for_holding(holding: Holding):
         else:
             dividend_ptr += 1
 
+def generate_ltcg_stcg_for_holding(holding: Holding):
+    holding.running_trades = []
+    trades_copy = copy.deepcopy(holding.trades)
+    for current_trade in trades_copy:
+        while current_trade.quantity > 0:
+            if holding.running_trades == []:
+                holding.running_trades.append(current_trade)
+                break
+            
+            last_trade = holding.running_trades[0]
+            if last_trade.typ in ["buy", "bonus"] and current_trade.typ in ["buy", "bonus"]:
+                holding.running_trades.append(current_trade)
+                break
+            elif last_trade.typ == "sell" and current_trade.typ == "sell":
+                holding.running_trades.append(current_trade)
+                break
+            else:
+                matched_quantity = min(last_trade.quantity, current_trade.quantity)
+                last_trade.quantity -= matched_quantity
+                current_trade.quantity -= matched_quantity
+                if last_trade.quantity == 0:
+                    holding.running_trades.pop(0)
+
+    for trade in holding.running_trades:
+        if trade.timestamp < datetime.now() - timedelta(days=365):  # Long-term
+            holding.running_ltcg += trade.quantity * (holding.current_price - trade.price)
+        else:  # Short-term
+            holding.running_stcg += trade.quantity * (holding.current_price - trade.price)
+
 def generate_holdings_from_tradebook(symbols: List[str], tradebook: List[Trade], index_historical_data: pd.DataFrame, stock_info: Dict[str, StockInfo]) -> List[Holding]:
     holdings = {symbol: Holding(symbol=symbol) for symbol in symbols}
     for symbol in symbols:
@@ -127,5 +157,7 @@ def generate_holdings_from_tradebook(symbols: List[str], tradebook: List[Trade],
 
         calculate_index_revenue_for_holding(holdings[symbol], index_historical_data)
         calculate_dividend_revenue_for_holding(holdings[symbol])
+        generate_ltcg_stcg_for_holding(holdings[symbol])
         
     return list(holdings.values())
+
